@@ -1,0 +1,327 @@
+% Created 2023-02-02 Thu 17:47
+% Intended LaTeX compiler: xelatex
+\documentclass[11pt,a4paper]{article}
+\usepackage{longtable}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\usepackage[capitalise,noabbrev]{cleveref}
+\usepackage{mathtools}
+\usepackage{stmaryrd}
+\usepackage{unicode-math}
+\usepackage{parskip}
+\usepackage{newunicodechar}
+%% \usepackage[moderate]{savetrees}
+\author{Greg Brown}
+\date{\today}
+\title{Frex\textsuperscript{2}: Normalisation by Evaluation for Second-Order Algebras}
+\hypersetup{
+ pdfauthor={Greg Brown},
+ pdftitle={Frex\textsuperscript{2}: Normalisation by Evaluation for Second-Order Algebras},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={},
+ pdfborder={0 0 0},
+ pdflang={English}}
+
+\newfontfamily{\fallbackfont}{STIX Two Math}[Scale=MatchLowercase]
+\DeclareTextFontCommand\textfallback{\fallbackfont}
+
+\setmathfont{STIX Two Math}
+
+\newunicodechar{β}{\textfallback{β}}
+\newunicodechar{ζ}{\textfallback{ζ}}
+\newunicodechar{η}{\textfallback{η}}
+\newunicodechar{λ}{\textfallback{λ}}
+\newunicodechar{↝}{\textfallback{↝}}
+\newunicodechar{↦}{\textfallback{↦}}
+\newunicodechar{⟨}{\textfallback{⟨}}
+\newunicodechar{⟩}{\textfallback{⟩}}
+
+\newcommand*\ctxext[2]{{#1}, {#2}}
+\newcommand*\ctxcons[2]{{#1}, {#2}}
+\newcommand*\ctxempty[0]{\emptyset}
+\newcommand*\sta[1]{\mathop{\overline{#1}}}
+\newcommand*\dyn[1]{\mathop{\underline{#1}}}
+\newcommand*\Lapp[2]{\texttt{\ensuremath{#1} \$ \ensuremath{#2}}}
+\newcommand*\Labs[2]{\texttt{λ{#1}. \ensuremath{#2}}}
+\newcommand*\msub[2]{\texttt{\ensuremath{#1}⟨\ensuremath{#2}⟩}}
+
+\begin{document}
+
+\maketitle
+
+\section{Second-Order Algebra}
+
+Universal second-order algebra is a technique to describe syntax and theories
+for algebras with operations that can bind variables. One notable example of a
+second-order algebra is the simply-typed lambda calculus (STLC). Second-order
+algebras depend on a set \(T\) of types. For instance, the grammar \(T \coloneqq
+{N \mid {T \rightarrowtail T}}\) gives the types for the STLC, where \(N\) describes some neutral
+base type.
+
+A \emph{signature} is a pair of a set \(O\) and function \({\vert\cdot\vert} \in {O \to {{(T^* \times
+T)}^* \times T}}\). The set \(O\) is the set of operators in the signature. The
+function gives the arity and type of each operator. Because we want operators to
+bind variables, the arguments are a pair of the list of types of bound
+variables, and the type of the argument. Let the notation \({(\gamma_i)\sigma_i} \vdash o : \tau\)
+denote \({\vert o \vert} = {{(\gamma_i , \sigma_i)}_i , \tau}\).
+
+The signature for the STLC has the two operators \(\mathtt{app}^{\alpha,\beta}\) and
+\(\mathtt{abs}^{\alpha,\beta}\) for each pair of types \(\alpha\) and \(\beta\). Their arities are
+\({{\alpha \rightarrowtail \beta}, \alpha} \vdash \mathtt{app}^{\alpha,\beta} : \beta\) and \({(\alpha)\beta} \vdash \mathtt{abs}^{\alpha,\beta} : {\alpha
+\rightarrowtail \beta}\).  Application takes two arguments---a function and value---and returns a
+result. Neither argument to application binds variables. Abstraction takes a
+single argument, of the output type of the newly-defined function. This argument
+has access to a freshly-bound variable of the input type to the function.
+
+The unpairing operation in STLC with products is also a second-order operation.
+The operation \verb|let (x, y) = e in e'| is represented by an operator
+\(\mathtt{unpair}^{\alpha,\beta,\tau}\), with \({{\alpha \times \beta}, {(\alpha, \beta)\tau}} \vdash
+\mathtt{unpair}^{\alpha,\beta,\tau} : \tau\). The argument \verb|e| is a pair and has no
+additional variables in scope. The second argument \verb|e'| has access to two
+new variables, corresponding to the two components of the pair.
+
+A non-example of a second-order operation is non-linear pattern matching, where
+the same variable appears twice in the pattern. One example is the pattern
+\verb|let (x, x) = e in e'|.
+
+Given a signature \((O , {\vert\cdot\vert})\), you can define an \emph{algebra}. Algebras
+have four constituent parts:
+
+\begin{itemize}
+\item a carrier sorted family \(\mathcal{A} = {T \to T^* \to \mathbf{Set}}\)
+\item an operation \({\llbracket\cdot\rrbracket}_o \in
+  {{(\mathcal{A}\,\sigma_i\,(\ctxext{\gamma_i}{\Gamma}))}_i \to {\mathcal{A}\,\tau\,\Gamma}}\) for each operator
+  \({(\gamma_i)\sigma_i} \vdash o : \tau\) and context \(\Gamma \in {T^*}\)
+\item a mapping \(\mathtt{var} \in {{\mathcal{I}\,\tau\,\Gamma} \to {\mathcal{A}\,\tau\,\Gamma}}\)
+\item a mapping \(\mathtt{sub} \in {{\mathcal{A}\,\tau\,\Gamma} \to (\forall \sigma. {{\mathcal{I}\,\sigma\,\Gamma} \to {\mathcal{A}\,\sigma\,\Delta}}) \to
+  {\mathcal{A}\,\tau\,\Delta}}\)
+\end{itemize}
+
+where \(\mathcal{I}\) is the sorted family of variables.
+
+Write \(\Gamma \vdash^{\mathcal{X}} \mathtt{t} : \tau\) for \(\mathtt{t} \in {\mathcal{X}\,\tau\,\Gamma}\), for any sorted
+family \(\mathcal{X}\).
+
+The operations, \(\mathtt{var}\) and \(\mathtt{sub}\) must obey a collection of
+coherence conditions. These assert that \(\mathtt{var}\) and \(\mathtt{sub}\)
+form a substitution monoid, and that \(\mathtt{sub}\) commutes with the
+operations in a capture-avoiding way\footnotemark{}.
+
+\footnotetext{What are they exactly?}
+
+For the STLC, an algebra \(\mathcal{A}\) has a carrier \(\mathcal{A}\); a pair of operations
+\({\llbracket\cdot\rrbracket}_\mathtt{app} \in {{\mathcal{A}\,(\alpha\rightarrowtail\beta)\,\Gamma} \to {\mathcal{A}\,\alpha\,\Gamma} \to
+  {\mathcal{A}\,\beta\,\Gamma}}\), and \({\llbracket\cdot\rrbracket}_\mathtt{abs} \in
+  {{\mathcal{A}\,\beta\,(\ctxcons{\alpha}{\Gamma})} \to {\mathcal{A}\,(\alpha\rightarrowtail\beta)\,\Gamma}}\); and the variable and
+  substitution maps.
+
+One example algebra for any signature is the unit algebra \(\mathbf{1}\), where
+\(\mathbf{1}\,\tau\,\Gamma = {\{\ast\}}\).
+
+Another example is the algebra of sets and functions for the STLC.\@ First, take
+any set \(V\) to represent values of type \(N\). A type \(T\) can then be
+interpreted as a set of values \(\mathcal{V}[T]\):
+
+\begin{align*}
+{\mathcal{V}[N]} &\mapsto V \\
+{\mathcal{V}[\alpha \rightarrowtail \beta]} &\mapsto {{\mathcal{V}[\alpha]} \to {\mathcal{V}[\beta]}}
+\end{align*}
+
+We can take the carrier sorted family \({\mathcal{A}\,\tau\,\Gamma} = {(\forall \sigma. {{\mathcal{I}\,\sigma\,\Gamma} \to
+{\mathcal{V}[\sigma]}}) \to {\mathcal{V}[\tau]}}\). From here, defining the operations and mappings
+is straight forward:
+
+\begin{align*}
+{{\llbracket {f , g} \rrbracket}_{\mathtt{app}}\,\gamma} &= {f\,\gamma\,(g\,\gamma)} \\
+{{\llbracket {f} \rrbracket}_{\mathtt{abs}}\,\gamma} &=
+  {x \mapsto {f\,({\mathtt{here} \mapsto x}; {{\mathtt{there}\,v} \mapsto \gamma\,v})}} \\
+{\mathtt{var}\,v\,\gamma} &= \gamma\,v \\
+{\mathtt{sub}\,f\,\sigma\,\gamma} &= {f\,(v \mapsto {\sigma\,v\,\gamma})}
+\end{align*}
+
+Verifying that this definition satisfies the coherence conditions is left as an
+exercise\footnotemark{}.
+
+\footnotetext{This is me being lazy.}
+
+\section{Metavariables}
+
+Here is a typical of writing the \(\beta\)-reduction relation for STLC:\@
+
+\begin{verbatim}
+(λ x. t) $ u ↝ t[x ↦ u]
+\end{verbatim}
+
+The variable \verb|t| is implicitly parameterised by the bound variable
+\verb|x|, meaning \({\ctxcons{\mathtt{x} : \alpha}{\Gamma}} \vdash \mathtt{t} : \beta\). We can
+make this dependency explicit. Similarly, \verb|u| is not parameterised by any
+terms:
+
+\begin{verbatim}
+(λ x. t<x>) $ u<> ↝ t<u<>>
+\end{verbatim}
+
+We can say that \verb|t| and \verb|u| are \emph{metavariables}---free variables
+with parameters. We can instantiate metavariables with concrete terms to create
+new ones. This property is formalised in the definition of a \emph{syntactic
+algebra}.
+
+A syntactic algebra for a signature \(\Sigma\) over a sorted family of metavariables
+\(\mathfrak{X}\) is:
+
+\begin{itemize}
+\item an algebra \(\mathcal{A}\) over the signature
+\item a map \(\mathtt{mvar} \in {{\mathfrak{X}\,\tau\,\Pi} \to (\forall \sigma. {{\mathcal{I}\,\sigma\,\Pi} \to {\mathcal{A}\,\sigma\,\Gamma}}) \to
+  {\mathcal{A}\,\tau\,\Gamma}}\)
+\item and a map \(\mathtt{msub} \in {{\mathcal{A}\,\tau\,\Gamma} \to (\forall {\sigma, \Theta}. {{\mathfrak{X}\,\sigma\,\Theta} \to
+  {\mathcal{A}\,\sigma\,(\ctxext{\Theta}{\Delta})}}) \to {\mathcal{A}\,\tau\,(\ctxext{\Gamma}{\Delta})}}\)
+\end{itemize}
+
+where \(\mathtt{mvar}\) and \(\mathtt{msub}\) are subject to conditions meaning
+they behave well with each other and \(\mathtt{sub}\)\footnotemark{}.
+
+\footnotetext{At some point I \emph{need} to give these conditions. Not yet.}
+
+The map \(\mathtt{mvar}\) takes a metavariable \(\Pi \vdash \mathfrak{m} : \tau\) and converts it
+into a term in context \(\Gamma\). This is by giving a value for each of \(\mathfrak{m}\)'s
+parameters, achieved via the substitution argument.
+
+The syntactic substitution map \(\mathtt{msub}\) is more complex. First note
+that it is linear: the output context is an extension of the input. This means
+that metasubstitution can use bound variables, as long as they were bound in a
+higher scope. Also observe that the substitution map (the second parameter) is
+independant of the input context \(\Gamma\). Because metavariables are always
+associated with a substitution, it is sufficient to map only the metavariables
+in their original contexts. The context can be ``corrected'' by a substitution.
+
+Note that the term algebra \(\mathbb{T}[\mathfrak{X}]\) for a signature is the free syntactic
+algebra over \(\mathfrak{X}\), with for each map \(f \in {{\mathfrak{X}\,\tau\,\Gamma}\to{\mathcal{A}\,\tau\,\Gamma}}\) a
+unique homomorphism \(\mathtt{bind}(f) \in {{\mathbb{T}[\mathfrak{X}]} \to \mathcal{A}}\).
+
+Return to the earlier example of \(\beta\) reduction. We have
+\(\ctxcons{\alpha}{\ctxempty} \vdash \mathtt{t} : \beta\) and \(\ctxempty \vdash \mathtt{u} : \alpha\)
+as our metavariables \(\mathfrak{X}\). We then have two terms, both of type \(\beta\) in an
+empty context: \verb|(λ x. t<x>) $ u<>| and \verb|t<u<>>|.
+
+Working in a new context \(\Gamma =
+{\ctxcons{\mathtt{f} : {\alpha\rightarrowtail\beta}}{\ctxcons{\mathtt{x} : \alpha}{\ctxempty}}}\), we can construct
+the syntactic substitution map \(\zeta \in {{\mathfrak{X}\,\sigma\,\Theta} \to {\mathcal{A}\,\sigma\,(\ctxext{\Theta}{\Gamma})}}\):
+
+\begin{align*}
+  \ctxcons{\mathtt{y} : \alpha}{\Gamma} \vdash {\zeta(\mathtt{t})} &= \Lapp{\mathtt{f}}{\mathtt{y}}
+  : \beta \\ \Gamma \vdash {\zeta(\mathtt{u})} &= x : \alpha
+\end{align*}
+
+where \(\mathtt{y}\) in the first equation is the parameter of metavariable
+\(\mathtt{t}\).
+
+An example application is \verb|(t<u<>>)<ζ>|, which is equivalent to \verb|f $ x|.
+
+\section{Free Extensions}
+
+Given an algebra \(\mathcal{A}\) and metavariables \(\mathfrak{X}\), a \emph{free extension} of \(\mathcal{A}\)
+by \(\mathfrak{X}\) is a syntactic algebra \(\mathcal{F}\) over \(\mathfrak{X}\) with the following additional
+structure:
+
+\begin{itemize}
+\item a homomorphism \(\mathtt{sta} \in {\mathcal{A}\to\mathcal{F}}\)
+\item for every pair of homomorphism \(f \in {\mathcal{A}\to\mathcal{B}}\) and map \(g \in
+  {{\mathcal{X}\,\tau\,\Gamma}\to{\mathcal{B}\,\tau\,\Gamma}}\), a homomorphism \(\mathtt{interp}(f,g) \in {\mathcal{F}\to\mathcal{B}}\)
+\end{itemize}
+
+such that things play nicely\footnotemark{}.
+
+\footnotetext{I am still resisting giving conditions.}
+
+The free extension is an extension in the sense that the algebra \(\mathcal{A}\) is given
+an interpretation of metavariables. It is free in the sense that adding the
+metavariables does not restrict the homomorphisms to or from \(\mathcal{A}\).
+
+Define the map \(\mathtt{dyn} \in {{\mathfrak{X}\,\tau\,\Gamma}\to{\mathcal{F}\,\tau\,\Gamma}}\) by \(\mathtt{dyn}(\mathfrak{m}) =
+\mathtt{msub}(\mathfrak{m},\mathtt{var})\). The names \(\mathtt{sta}\) and \(\mathtt{dyn}\)
+come from the perspective of staged compilation: values made with
+\(\mathtt{sta}\) are known statically and can be acted on during compilation.
+Values defined via \(\mathtt{dyn}\) are only known at runtime and have no
+inherent algebraic structure.
+
+One universal instance of the free extension is given by \(\mathbb{T}{[\mathcal{A} \cup \mathfrak{X}]}\), quotient
+the conditions listed earlier. Define homomorphisms \(\mathtt{eval} \in
+{{\mathbb{T}{[\mathcal{A} \cup \mathfrak{X}]}} \to \mathcal{F}}\) and \(\mathtt{reify} \in {\mathcal{F} \to {\mathbb{T}{[\mathcal{A} \cup \mathfrak{X}]}}}\) given by
+\(\mathtt{bind}\) and \(\mathtt{interp}\) respectively. \(\mathtt{eval}\)
+ideally performs static computations, normalising the term in some way, and
+\(\mathtt{reify}\) exports the normal form as a term.
+
+For brevity, let \(\sta{\mathtt{t}}\) represent \(\mathtt{sta}(\mathtt{t})\) and
+understand \(\dyn{\mathfrak{m}}\) to be \(\mathtt{dyn}(\mathfrak{m})\).
+
+\section{βη-Normal Form as a Free Extension}
+
+In the STLC, βη-normal form is a way of writing terms such that test for βη
+equivalence is a simple identity check. I will adapt this normal form to attempt
+to produce a free extension of a STLC model \(\mathcal{A}\) by metavariables \(\mathfrak{X}\).
+
+There are a couple of minor conceptual optimisations that we can apply before
+evaluating terms. Remember that \(\mathtt{sta}\) is a homomorphism, thus
+\(\mathtt{x}_i = \sta{\mathtt{x}_i}\) for all variables \(\mathtt{x}_i\). By
+applying this as a substitutino on terms, we only have to consider application,
+abstraction, and the static and dynamic metavariables. Further, we write
+\(\sta{\mathtt{t}}\) for \(\msub{\sta{\mathtt{t}}}{\mathtt{var}}\), and treat it
+as a distinct case.
+
+Define a term to be \emph{dynamic} if there is a subterm that uses a dynamic
+metavariable. For example, \(\msub{\dyn{\mathtt{m}}}{\zeta}\) and
+\(\Lapp{\sta{\mathtt{t}}}{(\Labs{x}{\msub{\dyn{\mathtt{n}}}{\mathtt{x}}})}\) are
+both dynamic, whilst \(\sta{\mathtt{t}}\) and
+\(\Labs{x}{\msub{\sta{\mathtt{u}}}{\mathtt{x}}}\) are neither dynamic
+(henceforth \emph{static}).
+
+Here is where I define the normal form\footnotemark{}.
+
+\footnotetext{I should do this.}
+
+\section{The Equality Problem}
+
+Unfortunately, the normal form just presented is not a model of STLC.\@ In fact,
+it is not even an algebra. The problem comes from substitution, and can be
+demonstrated by the following two equal terms:
+
+\begin{align*}
+\msub{\sta{\Lapp{\mathtt{x}_i}{\mathtt{t}}}}{\dyn{\zeta}}
+  &= \msub{(\Lapp{\sta{\mathtt{x}_i}}{\sta{\mathtt{t}}})}{\dyn{\zeta}} \\
+  &= \msub{(\Lapp{\mathtt{x}_i}{\sta{\mathtt{t}}})}{\dyn{\zeta}} \\
+  &= \Lapp{\msub{\mathtt{x}_i}{\dyn{\zeta}}}{\msub{\sta{\mathtt{t}}}{\dyn{\zeta}}} \\
+  &= \Lapp{\dyn{\zeta_i}}{\msub{\sta{\mathtt{t}}}{\dyn{\zeta}}}
+\end{align*}
+
+Assuming the terms have type \(N\), then they are in normal form. The top two
+lines normalise to the first term, and the bottom two lines normalise to the
+final term. However, because the subterm
+\(\sta{\Lapp{\mathtt{x}_i}{\mathtt{t}}}\) is opaque for an arbitrary algebra
+\(\mathcal{A}\), these two normal forms for the same term are necessarily distinct.
+
+For this normal form to be an algebra, it must be taken as a quotient with
+respect to some relation\footnotemark{}.
+
+\footnotetext{I need to work out what exactly.}
+
+\section{Removing the Quotient}
+
+This is full of loose ideas, without any proof.
+
+The quotient over the normal form can be eliminated in some cases. Starting
+simple, the quotient is eliminable when the algebra \(\mathcal{A}\) to be extend by \(\mathfrak{X}\)
+is given by \(\mathcal{A} = {\mathbb{T}[\mathfrak{Y}]}\) for some fixed family of metavariables \(\mathfrak{Y}\). The
+presented normal form is also the βη-normal form of \(\mathbb{T}[\mathfrak{X} \cup \mathfrak{Y}]\), which is
+an algebra without needing a quotient.
+
+Another example are algebras \(\mathcal{A}\) that are ``normal forms'', with a
+\(\mathfrak{Y}\)-syntactic-algebra homomorphism \(\mathcal{A} \to {\mathbb{T}[\mathfrak{Y}]}\) for some fixed family \(\mathfrak{Y}\).
+To evaluate terms \(\mathbb{T}[\mathcal{A} \cup \mathfrak{X}]\), first forget \(\mathcal{A}\) to obtain \(\mathbb{T}[{\mathbb{T}[\mathcal{A}]} \cup \mathfrak{X}]\).
+Next normalise this as above, and recompute \(\mathcal{A}\) using \(\mathtt{interp}\) and
+\(\mathtt{bind}\).
+
+\end{document}
+
+% LocalWords:  unpair/pair

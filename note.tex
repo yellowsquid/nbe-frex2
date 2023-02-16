@@ -1,9 +1,10 @@
 % Created 2023-02-02 Thu 17:47
-% Intended LaTeX compiler: xelatex
+% Intended LaTeX compiler: lualatex
 \documentclass[11pt,a4paper]{article}
 \usepackage{longtable}
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{ebproof}
 \usepackage{hyperref}
 \usepackage[capitalise,noabbrev]{cleveref}
 \usepackage{mathtools}
@@ -38,14 +39,25 @@
 \newunicodechar{⟨}{\textfallback{⟨}}
 \newunicodechar{⟩}{\textfallback{⟩}}
 
-\newcommand*\ctxext[2]{{#1}, {#2}}
+\newcommand*\tarr[2]{\ensuremath{{#1} \rightarrowtail {#2}}}
+\newcommand*\ctxext[2]{{#1} + {#2}}
 \newcommand*\ctxcons[2]{{#1}, {#2}}
-\newcommand*\ctxempty[0]{\emptyset}
-\newcommand*\sta[1]{\mathop{\overline{#1}}}
-\newcommand*\dyn[1]{\mathop{\underline{#1}}}
+\newcommand*\copair[2]{{#1} + {#2}}
+\newcommand*\InFamily[4]{\ensuremath{{#2} \vdash^{#1} {#3} : {#4}}}
+
+\newcommand*\Litt[1]{\texttt{#1}}
+\newcommand*\Var[1]{\Litt{x}_{#1}}
 \newcommand*\Lapp[2]{\texttt{\ensuremath{#1} \$ \ensuremath{#2}}}
 \newcommand*\Labs[2]{\texttt{λ{#1}. \ensuremath{#2}}}
-\newcommand*\msub[2]{\texttt{\ensuremath{#1}⟨\ensuremath{#2}⟩}}
+\newcommand*\Lsub[2]{\texttt{\ensuremath{#1}[\ensuremath{#2}]}}
+
+\newcommand*\mvar[2]{\texttt{\ensuremath{#1}⟨\ensuremath{#2}⟩}}
+\newcommand*\msub[2]{\texttt{\ensuremath{#1}\{\ensuremath{#2}\}}}
+
+\newcommand*\term[1]{\ensuremath{\mathbb{T}{[{#1}]}}}
+
+\newcommand*\sta[1]{\mathop{\overline{#1}}}
+\newcommand*\dyn[1]{\mathop{\underline{#1}}}
 
 \begin{document}
 
@@ -57,73 +69,92 @@ Universal second-order algebra is a technique to describe syntax and theories
 for algebras with operations that can bind variables. One notable example of a
 second-order algebra is the simply-typed lambda calculus (STLC). Second-order
 algebras depend on a set \(T\) of types. For instance, the grammar \(T \coloneqq
-{N \mid {T \rightarrowtail T}}\) gives the types for the STLC, where \(N\) describes some neutral
-base type.
+{N \mid \tarr{T}{T}}\) gives the types for the STLC, where \(N\) describes some
+neutral base type (e.g.\ natural numbers).
 
-A \emph{signature} is a pair of a set \(O\) and function \({\vert\cdot\vert} \in {O \to {{(T^* \times
-T)}^* \times T}}\). The set \(O\) is the set of operators in the signature. The
-function gives the arity and type of each operator. Because we want operators to
-bind variables, the arguments are a pair of the list of types of bound
-variables, and the type of the argument. Let the notation \({(\gamma_i)\sigma_i} \vdash o : \tau\)
+A \emph{signature} is a pair of a set \(O\) and function \({\vert\cdot\vert} \in {O \to
+{{(T^* \times T)}^* \times T}}\). The set \(O\) is the set of operators in the signature.
+The function gives the arity and return type of each operator. Each operator can
+take a number of arguments, hence the arity is a list of descriptors. Because
+arguments can bind variables, each descriptor has a list of bound variable
+types, as well as the argument type. Let the notation \((\gamma_i)\sigma_i \vdash o : \tau\)
 denote \({\vert o \vert} = {{(\gamma_i , \sigma_i)}_i , \tau}\).
 
-The signature for the STLC has the two operators \(\mathtt{app}^{\alpha,\beta}\) and
-\(\mathtt{abs}^{\alpha,\beta}\) for each pair of types \(\alpha\) and \(\beta\). Their arities are
-\({{\alpha \rightarrowtail \beta}, \alpha} \vdash \mathtt{app}^{\alpha,\beta} : \beta\) and \({(\alpha)\beta} \vdash \mathtt{abs}^{\alpha,\beta} : {\alpha
-\rightarrowtail \beta}\).  Application takes two arguments---a function and value---and returns a
-result. Neither argument to application binds variables. Abstraction takes a
-single argument, of the output type of the newly-defined function. This argument
-has access to a freshly-bound variable of the input type to the function.
+The signature for the STLC has the two operators \(\mathtt{app}_{\alpha,\beta}\) and
+\(\mathtt{abs}_{\alpha,\beta}\) for each pair of types \(\alpha\) and \(\beta\). Their arities are
+\({\ctxcons{\tarr{\alpha}{\beta}}{\alpha}} \vdash \mathtt{app}_{\alpha,\beta} : \beta\) and \({(\alpha)\beta} \vdash
+\mathtt{abs}_{\alpha,\beta} : \tarr{\alpha}{\beta}\).  Application (\(\mathtt{app}\)) takes two
+arguments---a function and value---and returns a result. Neither argument to
+application binds variables.  Abstraction (\(\mathtt{abs}\)) takes a single
+argument, whose type is the output type of the function. This argument has
+access to a freshly-bound variable of the input type.
 
 The unpairing operation in STLC with products is also a second-order operation.
 The operation \verb|let (x, y) = e in e'| is represented by an operator
-\(\mathtt{unpair}^{\alpha,\beta,\tau}\), with \({{\alpha \times \beta}, {(\alpha, \beta)\tau}} \vdash
-\mathtt{unpair}^{\alpha,\beta,\tau} : \tau\). The argument \verb|e| is a pair and has no
+\(\mathtt{unpair}_{\alpha,\beta,\tau}\), with \({\ctxcons{\alpha \times \beta}{(\ctxcons{\alpha}{\beta})\tau}} \vdash
+\mathtt{unpair}_{\alpha,\beta,\tau} : \tau\). The argument \verb|e| is a pair and has no
 additional variables in scope. The second argument \verb|e'| has access to two
-new variables, corresponding to the two components of the pair.
+new variables, corresponding to the two components of the pair \verb|x| and
+\verb|y|\footnotemark.
 
-A non-example of a second-order operation is non-linear pattern matching, where
-the same variable appears twice in the pattern. One example is the pattern
-\verb|let (x, x) = e in e'|.
+\footnotetext{Think of a good non-example.}
 
-Given a signature \((O , {\vert\cdot\vert})\), you can define an \emph{algebra}. Algebras
-have four constituent parts:
+Define a \emph{sorted family} to be a type-and-context-indexed set. For example,
+the family of variables \(\mathcal{I}\,\tau\,\Gamma\) is the set of positions of type \(\tau\) in the
+context \(\Gamma\). Write \InFamily{\mathfrak{X}}{\Gamma}{\Litt{t}}{\tau} for \(\Litt{t} \in
+{\mathcal{X}\,\tau\,\Gamma}\), for any sorted family \(\mathcal{X}\).
+
+Given a signature \(\Sigma = (O , {\vert\cdot\vert})\), an \emph{algebra} has four constituent
+parts:
 
 \begin{itemize}
-\item a carrier sorted family \(\mathcal{A} = {T \to T^* \to \mathbf{Set}}\)
+\item a carrier sorted family \(\mathcal{A}\)
 \item an operation \({\llbracket\cdot\rrbracket}_o \in
   {{(\mathcal{A}\,\sigma_i\,(\ctxext{\gamma_i}{\Gamma}))}_i \to {\mathcal{A}\,\tau\,\Gamma}}\) for each operator
-  \({(\gamma_i)\sigma_i} \vdash o : \tau\) and context \(\Gamma \in {T^*}\)
+  \({(\gamma_i)\sigma_i} \vdash o : \tau\)
 \item a mapping \(\mathtt{var} \in {{\mathcal{I}\,\tau\,\Gamma} \to {\mathcal{A}\,\tau\,\Gamma}}\)
 \item a mapping \(\mathtt{sub} \in {{\mathcal{A}\,\tau\,\Gamma} \to (\forall \sigma. {{\mathcal{I}\,\sigma\,\Gamma} \to {\mathcal{A}\,\sigma\,\Delta}}) \to
   {\mathcal{A}\,\tau\,\Delta}}\)
 \end{itemize}
 
-where \(\mathcal{I}\) is the sorted family of variables.
+subject to the following conditions:
 
-Write \(\Gamma \vdash^{\mathcal{X}} \mathtt{t} : \tau\) for \(\mathtt{t} \in {\mathcal{X}\,\tau\,\Gamma}\), for any sorted
-family \(\mathcal{X}\).
+\begin{description}
+\item[left unit:] \({\mathtt{sub}(\mathtt{var}_i, \sigma)} = \sigma_i\)
+\item[right unit:] \({\mathtt{sub}(\Litt{t}, \mathtt{var})} = \Litt{t}\)
+\item[associativity:]
+  \({\mathtt{sub}(\mathtt{sub}(\Litt{t}, \sigma), \varsigma)} =
+    {\mathtt{sub}(\Litt{t}, {i \mapsto {\mathtt{sub}(\sigma_i, \varsigma)}})}\)
+\item[naturality:]
+  \({\mathtt{sub}({\llbracket \Litt{ts} \rrbracket}_o, \sigma)} =
+    {\llbracket{(\mathtt{sub}(\Litt{ts}_i, {\Uparrow\sigma}))}_i\rrbracket}_o\)
+\end{description}
 
-The operations, \(\mathtt{var}\) and \(\mathtt{sub}\) must obey a collection of
-coherence conditions. These assert that \(\mathtt{var}\) and \(\mathtt{sub}\)
-form a substitution monoid, and that \(\mathtt{sub}\) commutes with the
-operations in a capture-avoiding way\footnotemark{}.
+where \(\Uparrow\sigma\) uses \(\mathtt{var}\) and \(\mathtt{sub}\) to lift a substitution
+\(\sigma\) from \({\mathcal{I}\,\tau\,\Gamma}\to{\mathcal{A}\,\tau\,\Delta}\) to
+\({\mathcal{I},\tau\,(\ctxext{\Theta}{\Gamma})}\to{\mathcal{A},\tau\,(\ctxext{\Theta}{\Delta})}\). The dual extension, \({\sigma\Uparrow} \in
+  {{\mathcal{I},\tau\,(\ctxext{\Gamma}{\Theta})}\to{\mathcal{A},\tau\,(\ctxext{\Gamma}{\Theta})}}\) will be used later.
 
-\footnotetext{What are they exactly?}
+The associativity, left and right unit conditions assert that \(\mathcal{A}\) is a
+\emph{substitution monoid}. This means that substitution interacts with itself
+and variables in an intuitive way. The naturality condition asserts that
+substitution passes through operators and is capture-avoiding. Substitution
+lifting maps freshly-bound variables to themselves.
 
 For the STLC, an algebra \(\mathcal{A}\) has a carrier \(\mathcal{A}\); a pair of operations
-\({\llbracket\cdot\rrbracket}_\mathtt{app} \in {{\mathcal{A}\,(\alpha\rightarrowtail\beta)\,\Gamma} \to {\mathcal{A}\,\alpha\,\Gamma} \to
-  {\mathcal{A}\,\beta\,\Gamma}}\), and \({\llbracket\cdot\rrbracket}_\mathtt{abs} \in
-  {{\mathcal{A}\,\beta\,(\ctxcons{\alpha}{\Gamma})} \to {\mathcal{A}\,(\alpha\rightarrowtail\beta)\,\Gamma}}\); and the variable and
-  substitution maps.
+\({\llbracket\cdot\rrbracket}_\mathtt{app} \in {{\mathcal{A}\,(\tarr{\alpha}{\beta})\,\Gamma} \to {\mathcal{A}\,\alpha\,\Gamma} \to
+{\mathcal{A}\,\beta\,\Gamma}}\), and \({\llbracket\cdot\rrbracket}_\mathtt{abs} \in
+{{\mathcal{A}\,\beta\,(\ctxcons{\alpha}{\Gamma})} \to {\mathcal{A}\,(\tarr{\alpha}{\beta})\,\Gamma}}\); and the variable and
+substitution maps.
 
 One example algebra for any signature is the unit algebra \(\mathbf{1}\), where
-\(\mathbf{1}\,\tau\,\Gamma = {\{\ast\}}\).
+\(\mathbf{1}\,\tau\,\Gamma = {\{\ast\}}\). Each operation \({\llbracket\cdot\rrbracket}_o\),
+and the maps \(\mathtt{var}\) and \(\mathtt{sub}\), return the unique value of
+the appropriate type. This trivially satisfies the conditions.
 
 Another example is the algebra of sets and functions for the STLC.\@ First, take
 any set \(V\) to represent values of type \(N\). A type \(T\) can then be
 interpreted as a set of values \(\mathcal{V}[T]\):
-
 \begin{align*}
 {\mathcal{V}[N]} &\mapsto V \\
 {\mathcal{V}[\alpha \rightarrowtail \beta]} &\mapsto {{\mathcal{V}[\alpha]} \to {\mathcal{V}[\beta]}}
@@ -132,13 +163,12 @@ interpreted as a set of values \(\mathcal{V}[T]\):
 We can take the carrier sorted family \({\mathcal{A}\,\tau\,\Gamma} = {(\forall \sigma. {{\mathcal{I}\,\sigma\,\Gamma} \to
 {\mathcal{V}[\sigma]}}) \to {\mathcal{V}[\tau]}}\). From here, defining the operations and mappings
 is straight forward:
-
 \begin{align*}
-{{\llbracket {f , g} \rrbracket}_{\mathtt{app}}\,\gamma} &= {f\,\gamma\,(g\,\gamma)} \\
-{{\llbracket {f} \rrbracket}_{\mathtt{abs}}\,\gamma} &=
-  {x \mapsto {f\,({\mathtt{here} \mapsto x}; {{\mathtt{there}\,v} \mapsto \gamma\,v})}} \\
-{\mathtt{var}\,v\,\gamma} &= \gamma\,v \\
-{\mathtt{sub}\,f\,\sigma\,\gamma} &= {f\,(v \mapsto {\sigma\,v\,\gamma})}
+{{\llbracket {f , g} \rrbracket}_{\mathtt{app}}(\gamma)} &= {f(\gamma,(g(\gamma)))} \\
+{{\llbracket {f} \rrbracket}_{\mathtt{abs}}(\gamma)} &=
+  {x \mapsto {f({\mathtt{here} \mapsto x}; {{\mathtt{there}\,i} \mapsto \gamma\,i})}} \\
+{\mathtt{var}(i, \gamma)} &= \gamma_i \\
+{\mathtt{sub}(f,\sigma,\gamma)} &= {f\,(i \mapsto {\sigma_i(\gamma)})}
 \end{align*}
 
 Verifying that this definition satisfies the coherence conditions is left as an
@@ -148,25 +178,23 @@ exercise\footnotemark{}.
 
 \section{Metavariables}
 
-Here is a typical of writing the \(\beta\)-reduction relation for STLC:\@
+Here is a typical way of writing the \(\beta\)-reduction relation for STLC:\@
 
 \begin{verbatim}
 (λ x. t) $ u ↝ t[x ↦ u]
 \end{verbatim}
 
 The variable \verb|t| is implicitly parameterised by the bound variable
-\verb|x|, meaning \({\ctxcons{\mathtt{x} : \alpha}{\Gamma}} \vdash \mathtt{t} : \beta\). We can
-make this dependency explicit. Similarly, \verb|u| is not parameterised by any
-terms:
+\verb|x|, meaning \InFamily{}{\ctxcons{\alpha}{t}}{\Litt{t}}{\beta}. In contrast,
+\verb|u| is not parameterised by any terms. We can make the parameters explicit:
 
 \begin{verbatim}
 (λ x. t<x>) $ u<> ↝ t<u<>>
 \end{verbatim}
 
-We can say that \verb|t| and \verb|u| are \emph{metavariables}---free variables
-with parameters. We can instantiate metavariables with concrete terms to create
-new ones. This property is formalised in the definition of a \emph{syntactic
-algebra}.
+\verb|t| and \verb|u| are \emph{metavariables}---free variables with parameters.
+We can instantiate metavariables with concrete terms to create new ones. This
+property is formalised in the definition of a \emph{syntactic algebra}.
 
 A syntactic algebra for a signature \(\Sigma\) over a sorted family of metavariables
 \(\mathfrak{X}\) is:
@@ -179,14 +207,37 @@ A syntactic algebra for a signature \(\Sigma\) over a sorted family of metavaria
   {\mathcal{A}\,\sigma\,(\ctxext{\Theta}{\Delta})}}) \to {\mathcal{A}\,\tau\,(\ctxext{\Gamma}{\Delta})}}\)
 \end{itemize}
 
-where \(\mathtt{mvar}\) and \(\mathtt{msub}\) are subject to conditions meaning
-they behave well with each other and \(\mathtt{sub}\)\footnotemark{}.
+which satisfy these conditions\footnotemark{}:
 
-\footnotetext{At some point I \emph{need} to give these conditions. Not yet.}
+\footnotetext{Explain why these conditions exist, and why they are so ugly.}
 
-The map \(\mathtt{mvar}\) takes a metavariable \(\Pi \vdash \mathfrak{m} : \tau\) and converts it
-into a term in context \(\Gamma\). This is by giving a value for each of \(\mathfrak{m}\)'s
-parameters, achieved via the substitution argument.
+\begin{enumerate}
+\item
+  \({\mathtt{sub}(\mathtt{mvar}(\mathfrak{m},\sigma),\varsigma)} =
+    {\mathtt{mvar}(\mathfrak{m},{i \mapsto {\mathtt{sub}(\sigma_i,\varsigma)}})}\)
+\item
+  \({\mathtt{msub}({\llbracket ts \rrbracket}_o,\zeta)} =
+    {\llbracket{\mathtt{msub}(ts_i,\zeta)}\rrbracket}_o\)
+\item
+  \({\mathtt{msub}(\mathtt{var}(i),\zeta)} =
+    {\mathtt{var}(\mathtt{inl}(i))}\)
+\item
+  \({\mathtt{msub}(\mathtt{sub}(t,\sigma),\zeta)} =
+    {\mathtt{sub}(\mathtt{msub}(t,\zeta),{\sigma\Uparrow})}\)
+\item
+  \({\mathtt{sub}(\mathtt{msub}(t,\zeta),{\Uparrow\sigma})} =
+    {\mathtt{msub}(t,{\mathfrak{m} \mapsto {\mathtt{sub}(\zeta_{\mathfrak{m}},{\Uparrow\sigma})}})}\)
+\item
+  \({\mathtt{msub}(\mathtt{mvar}(\mathfrak{m},\sigma),\zeta)} =
+    {\mathtt{sub}(\zeta_{\mathfrak{m}},\copair{(i \mapsto {\mathtt{msub}(\sigma_i,\zeta)})}{\mathtt{inr}\circ\mathtt{var}})}\)
+\item
+  \({\mathtt{msub}(\mathtt{msub}(t,\zeta),\xi)} =
+    {\mathtt{msub}(t,{\mathfrak{m} \mapsto {\mathtt{msub}(\zeta_{\mathfrak{m}},\xi)}})}\)
+\end{enumerate}
+
+The map \(\mathtt{mvar}\) takes a metavariable \InFamily{\mathfrak{X}}{\Pi}{\mathfrak{m}}{\tau} and
+converts it into a term in context \(\Gamma\). This is by giving a value for each of
+\(\mathfrak{m}\)'s parameters, achieved via the substitution argument.
 
 The syntactic substitution map \(\mathtt{msub}\) is more complex. First note
 that it is linear: the output context is an extension of the input. This means
@@ -196,48 +247,96 @@ independant of the input context \(\Gamma\). Because metavariables are always
 associated with a substitution, it is sufficient to map only the metavariables
 in their original contexts. The context can be ``corrected'' by a substitution.
 
-Note that the term algebra \(\mathbb{T}[\mathfrak{X}]\) for a signature is the free syntactic
-algebra over \(\mathfrak{X}\), with for each map \(f \in {{\mathfrak{X}\,\tau\,\Gamma}\to{\mathcal{A}\,\tau\,\Gamma}}\) a
-unique homomorphism \(\mathtt{bind}(f) \in {{\mathbb{T}[\mathfrak{X}]} \to \mathcal{A}}\).
+%% Conditions 1, 2 and 3 require syntactic substitution to pass through normal term
+%% operations. \(\zeta\) remains unchanged because it never mentions the original
+%% context. The most subtle
 
-Return to the earlier example of \(\beta\) reduction. We have
-\(\ctxcons{\alpha}{\ctxempty} \vdash \mathtt{t} : \beta\) and \(\ctxempty \vdash \mathtt{u} : \alpha\)
-as our metavariables \(\mathfrak{X}\). We then have two terms, both of type \(\beta\) in an
-empty context: \verb|(λ x. t<x>) $ u<>| and \verb|t<u<>>|.
+The term algebra \term{\mathfrak{X}} for a signature is the free syntactic algebra over
+\(\mathfrak{X}\), with for each map \(f \in {{\mathfrak{X}\,\tau\,\Gamma}\to{\mathcal{A}\,\tau\,\Gamma}}\) a unique homomorphism
+\(\mathtt{bind}(f) \in {\term{\mathfrak{X}} \to \mathcal{A}}\).
 
-Working in a new context \(\Gamma =
-{\ctxcons{\mathtt{f} : {\alpha\rightarrowtail\beta}}{\ctxcons{\mathtt{x} : \alpha}{\ctxempty}}}\), we can construct
-the syntactic substitution map \(\zeta \in {{\mathfrak{X}\,\sigma\,\Theta} \to {\mathcal{A}\,\sigma\,(\ctxext{\Theta}{\Gamma})}}\):
+Return to the earlier example of \(\beta\) reduction. We have metavariables \(\mathfrak{X}\)
+with two elements: \InFamily{\mathfrak{X}}{\alpha}{\Litt{t}}{\beta} and \InFamily{\mathfrak{X}}{}{\Litt{u}}{\alpha}.
+We then have two terms, both of type \(\beta\) in an empty context:
+\verb|(λ x. t<x>) $ u<>| and \verb|t<u<>>|.
 
-\begin{align*}
-  \ctxcons{\mathtt{y} : \alpha}{\Gamma} \vdash {\zeta(\mathtt{t})} &= \Lapp{\mathtt{f}}{\mathtt{y}}
-  : \beta \\ \Gamma \vdash {\zeta(\mathtt{u})} &= x : \alpha
-\end{align*}
+As a more complex example, we can construct a syntactic substitution map \(\zeta \in
+{{\mathfrak{X}\,\sigma\,\Theta} \to {\mathcal{A}\,\sigma\,(\ctxext{\Theta}{\ctxcons{\tarr{\alpha}{\beta}}{\alpha}})}}\)\footnotemark{}:
+\begin{gather*}
+  \InFamily{\mathcal{A}}{\ctxcons{\alpha}{\ctxcons{\tarr{\alpha}{\beta}}{\alpha}}}{\Lapp{\Var{1}}{\Var{0}}}{\beta} \\
+  \InFamily{\mathcal{A}}{\ctxcons{\tarr{\alpha}{\beta}}{\alpha}}{\Var{1}}{\alpha}
+\end{gather*}
 
-where \(\mathtt{y}\) in the first equation is the parameter of metavariable
-\(\mathtt{t}\).
+\footnotetext{Include some examples.}
 
-An example application is \verb|(t<u<>>)<ζ>|, which is equivalent to \verb|f $ x|.
+Metavariables allow a formal definition of equational theories, and then models.
+An \emph{equation} is a quintuple \((\mathfrak{X},\Gamma,\tau,\Litt{t},\Litt{u})\) such that
+\InFamily{\term{\mathfrak{X}}}{\Gamma}{\Litt{t}}{\tau} and \InFamily{\term{\mathfrak{X}}}{\Gamma}{\Litt{u}}{\tau}. An
+\emph{equational theory} is a signature with a finite set of axioms
+\InFamily{\term{\mathfrak{X}}}{\Gamma}{\Litt{t} =_a \Litt{u}}{\tau}. This can be extended to an
+equivalence relation \InFamily{\term{\mathfrak{X}}}{\Gamma}{\Litt{t} = \Litt{u}}{\tau} by taking
+the closure of axioms with respect to metasubstitution.
+
+A \emph{model} of an equational theory is an algebra \(\mathcal{A}\) where all equations
+are valid: given an equation \InFamily{\term{\mathfrak{X}}}{\Gamma}{\Litt{t} = \Litt{u}}{\tau},
+then for any environment map \(f \in {\mathfrak{X}\,\tau\,\Gamma}\to{\mathcal{A}\,\tau\,\Gamma}\), the equality
+\(\mathtt{bind}(f,t) = \mathtt{bind}(f,u)\) holds.
 
 \section{Free Extensions}
 
-Given an algebra \(\mathcal{A}\) and metavariables \(\mathfrak{X}\), a \emph{free extension} of \(\mathcal{A}\)
-by \(\mathfrak{X}\) is a syntactic algebra \(\mathcal{F}\) over \(\mathfrak{X}\) with the following additional
-structure:
+%% Computation involving terms of second-order algebras often starts by
+%% transforming them into a normal form. Informally, this is a syntactic operation
+%% that usually performs some evaluation of the term that preserves the semantics.
+
+%% An algebra (or model) \(\mathcal{A}\) is a \emph{normal form} of term algebra (model)
+%% \(\term{\mathfrak{X}}\) if it consists of:
+
+%% \begin{itemise}
+%% \item a map \(\mathtt{env} \in {{\mathfrak{X}\,\tau\,\Gamma}\to{\mathcal{A}\,\tau\,\Gamma}}\)
+%% \item a homomorphism \(\mathtt{reify} \in \mathcal{A}\to{\term{\mathfrak{X}}}\)
+%% \end{itemise}
+
+%% where the composite homomorphism
+%% \({{\mathtt{bind}(\mathtt{env})}\circ\mathtt{reify}}\) is the identity. Define
+%% \(\mathtt{eval} = {\mathtt{bind}(\mathtt{env})}\).
+
+%% The main structure of a normal form is the \(\mathtt{reify}\) homomorphism,
+%% which interprets the algebra as terms. The map \(\mathtt{env}\) provides the
+%% intended interpretation of the non-algebraic values of \(\mathcal{A}\), reflected in the
+%% identity condition.
+
+%% Note that normal forms make no requirement of \(\mathtt{eval}\) or
+%% \(\mathtt{reify}\) to perform any computation. This means that terms are a
+%% trivial normal form.
+
+%% At first, you may think that \(\mathcal{A}\) is trivially a normal form of \(\term{\mathcal{A}}\), where
+%% \(\mathtt{env}\) is the identity. However, there is in general no homomorphism
+%% \(\mathcal{A}\to{\term{\mathcal{A}}}\).
+
+Given an algebra (or model) \(\mathcal{A}\) and metavariables \(\mathfrak{X}\), a \emph{free
+extension} of \(\mathcal{A}\) by \(\mathfrak{X}\) is a syntactic algebra (or model) \(\mathcal{F}\) over \(\mathfrak{X}\)
+with the following additional structure:
 
 \begin{itemize}
 \item a homomorphism \(\mathtt{sta} \in {\mathcal{A}\to\mathcal{F}}\)
 \item for every pair of homomorphism \(f \in {\mathcal{A}\to\mathcal{B}}\) and map \(g \in
-  {{\mathcal{X}\,\tau\,\Gamma}\to{\mathcal{B}\,\tau\,\Gamma}}\), a homomorphism \(\mathtt{interp}(f,g) \in {\mathcal{F}\to\mathcal{B}}\)
+  {{\mathcal{X}\,\tau\,\Gamma}\to{\mathcal{B}\,\tau\,\Gamma}}\), a unique homomorphism \(\mathtt{interp}(f,g) \in
+  {\mathcal{F}\to\mathcal{B}}\)
 \end{itemize}
 
-such that things play nicely\footnotemark{}.
+with the following two conditions:
 
-\footnotetext{I am still resisting giving conditions.}
+\begin{itemize}
+\item \({{\mathtt{interp}(f,g)}\circ\mathtt{sta}} = g\)
+\item
+  \({{\mathtt{interp}(f,g,{\mathtt{mvar}(\mathfrak{m},\sigma)})}} =
+    {\mathtt{sub}(g(\mathfrak{m}),{{\mathtt{interp}(f,g)} \circ \sigma})}\)
+\end{itemize}
 
+This is equivalently the algebraic (model) coproduct of \(\mathcal{A}\) and \(\term{\mathfrak{X}}\).
 The free extension is an extension in the sense that the algebra \(\mathcal{A}\) is given
 an interpretation of metavariables. It is free in the sense that adding the
-metavariables does not restrict the homomorphisms to or from \(\mathcal{A}\).
+metavariables minimally restricts the homomorphisms to or from the algebra.
 
 Define the map \(\mathtt{dyn} \in {{\mathfrak{X}\,\tau\,\Gamma}\to{\mathcal{F}\,\tau\,\Gamma}}\) by \(\mathtt{dyn}(\mathfrak{m}) =
 \mathtt{msub}(\mathfrak{m},\mathtt{var})\). The names \(\mathtt{sta}\) and \(\mathtt{dyn}\)
@@ -246,81 +345,200 @@ come from the perspective of staged compilation: values made with
 Values defined via \(\mathtt{dyn}\) are only known at runtime and have no
 inherent algebraic structure.
 
-One universal instance of the free extension is given by \(\mathbb{T}{[\mathcal{A} \cup \mathfrak{X}]}\), quotient
-the conditions listed earlier. Define homomorphisms \(\mathtt{eval} \in
-{{\mathbb{T}{[\mathcal{A} \cup \mathfrak{X}]}} \to \mathcal{F}}\) and \(\mathtt{reify} \in {\mathcal{F} \to {\mathbb{T}{[\mathcal{A} \cup \mathfrak{X}]}}}\) given by
-\(\mathtt{bind}\) and \(\mathtt{interp}\) respectively. \(\mathtt{eval}\)
-ideally performs static computations, normalising the term in some way, and
-\(\mathtt{reify}\) exports the normal form as a term.
+Using \(\mathtt{sta}\) and \(\mathtt{dyn}\), there is a homomorphism
+\(\mathtt{eval} \in {\term{\mathcal{A} \cup \mathfrak{X}}\to\mathcal{F}}\) given by \(\mathtt{eval} =
+{\mathtt{bind}(\mathtt{sta}\cup\mathtt{dyn})}\). Because there is a morphism
+\(\mathcal{A}\to{\term{\mathcal{A}}_{/\approx}}\)\footnotemark{}, there is also a morphism
+\(\mathtt{reify} \in {\mathcal{F}\to{\term{\mathcal{A} \cup \mathfrak{X}}_{/\approx}}}\) defined using \(\mathtt{interp}\).
 
-For brevity, let \(\sta{\mathtt{t}}\) represent \(\mathtt{sta}(\mathtt{t})\) and
+\footnotetext{Define what \(\approx\) is.}
+
+%% One universal instance of the free extension is given by \(\mathbb{T}{[\mathcal{A} \cup \mathfrak{X}]}\), quotient
+%% the conditions listed earlier. Define homomorphisms \(\mathtt{eval} \in
+%% {{\mathbb{T}{[\mathcal{A} \cup \mathfrak{X}]}} \to \mathcal{F}}\) and \(\mathtt{reify} \in {\mathcal{F} \to {\mathbb{T}{[\mathcal{A} \cup \mathfrak{X}]}}}\) given by
+%% \(\mathtt{bind}\) and \(\mathtt{interp}\) respectively. \(\mathtt{eval}\)
+%% ideally performs static computations, normalising the term in some way, and
+%% \(\mathtt{reify}\) exports the normal form as a term.
+
+For brevity, let \(\sta{\Litt{t}}\) represent \(\mathtt{sta}(\Litt{t})\) and
 understand \(\dyn{\mathfrak{m}}\) to be \(\mathtt{dyn}(\mathfrak{m})\).
 
 \section{βη-Normal Form as a Free Extension}
 
 In the STLC, βη-normal form is a way of writing terms such that test for βη
 equivalence is a simple identity check. I will adapt this normal form to attempt
-to produce a free extension of a STLC model \(\mathcal{A}\) by metavariables \(\mathfrak{X}\).
+to produce a free extension of a STLC model \(\mathcal{A}\) by metavariables \(\mathfrak{X}\),
+dubbed \(\mathcal{A}_{\beta\eta}[\mathfrak{X}]\).
 
-There are a couple of minor conceptual optimisations that we can apply before
-evaluating terms. Remember that \(\mathtt{sta}\) is a homomorphism, thus
-\(\mathtt{x}_i = \sta{\mathtt{x}_i}\) for all variables \(\mathtt{x}_i\). By
-applying this as a substitutino on terms, we only have to consider application,
-abstraction, and the static and dynamic metavariables. Further, we write
-\(\sta{\mathtt{t}}\) for \(\msub{\sta{\mathtt{t}}}{\mathtt{var}}\), and treat it
-as a distinct case.
+%% There are a couple of minor conceptual optimisations that we can apply before
+%% evaluating terms. Remember that \(\mathtt{sta}\) is a homomorphism, thus
+%% \(\Var{i} = \sta{\Var{i}}\) for all variables \(\Var{i}\). By
+%% applying this as a substitution on terms, we only have to consider application,
+%% abstraction, static values and dynamic metavariables. Further, we write
+%% \(\sta{\Litt{t}}\) for \(\mvar{\sta{\Litt{t}}}{\mathtt{var}}\), and treat it
+%% as a distinct case.
 
-Define a term to be \emph{dynamic} if there is a subterm that uses a dynamic
-metavariable. For example, \(\msub{\dyn{\mathtt{m}}}{\zeta}\) and
-\(\Lapp{\sta{\mathtt{t}}}{(\Labs{x}{\msub{\dyn{\mathtt{n}}}{\mathtt{x}}})}\) are
-both dynamic, whilst \(\sta{\mathtt{t}}\) and
-\(\Labs{x}{\msub{\sta{\mathtt{u}}}{\mathtt{x}}}\) are neither dynamic
-(henceforth \emph{static}).
+A term is \emph{dynamic} if there is a subterm that uses a dynamic metavariable.
+Otherwise it is static. For example, \(\mvar{\dyn{\mathfrak{m}}}{\zeta}\) and
+\(\Lapp{\sta{\Litt{t}}}{(\Labs{x}{\mvar{\dyn{\Litt{n}}}{\Litt{x}}})}\) are
+both dynamic, whilst \(\Var{i}\), \(\sta{\Litt{t}}\) and
+\(\Labs{x}{\mvar{\sta{\Litt{u}}}{\Litt{x}}}\) are static.
 
-Here is where I define the normal form\footnotemark{}.
+The sorted family \(\mathcal{A}_{\beta\eta}[\mathfrak{X}]\) and a family \(\mathcal{A}_{ne}[\mathfrak{X}]\) are defined
+inductively by the following judgements:
 
-\footnotetext{I should do this.}
+\begin{gather*}
+\begin{prooftree}
+  \hypo{\InFamily{\mathcal{A}_{\beta\eta}[\mathfrak{X}]}{\ctxcons{\Litt{x} : \alpha}{\Gamma}}{\Litt{t}}{\beta}}
+  \infer1[1]{\InFamily{\mathcal{A}_{\beta\eta}[\mathfrak{X}]}{\Gamma}{\Labs{x}{\Litt{t}}}{\tarr{\alpha}{\beta}}}
+\end{prooftree}
+\qquad
+\begin{prooftree}
+  \hypo{\InFamily{\mathcal{A}_{ne}[\mathfrak{X}]}{\Gamma}{\Litt{t}}{N}}
+  \infer1[2]{\InFamily{\mathcal{A}_{\beta\eta}[\mathfrak{X}]}{\Gamma}{\Litt{t}}{N}}
+\end{prooftree}
+\\
+\begin{prooftree}
+  \hypo{\InFamily{\mathcal{A}_{ne}[\mathfrak{X}]}{\Gamma}{\Litt{t}}{\tarr{\alpha}{\beta}}}
+  \hypo{\InFamily{\mathcal{A}_{\beta\eta}[\mathfrak{X}]}{\Gamma}{\Litt{u}}{\alpha}}
+  \hypo{\Litt{t} \text{ or } \Litt{u} \text{ uses a dynamic variable}}
+  \infer3[3]{\InFamily{\mathcal{A}_{ne}[\mathfrak{X}]}{\Gamma}{\Lapp{\Litt{t}}{\Litt{u}}}{\beta}}
+\end{prooftree}
+\\
+\begin{prooftree}
+  \hypo{\InFamily{\mathfrak{X}}{\Pi}{\mathfrak{m}}{\tau}}
+  \hypo{\InFamily{\mathcal{A}_{ne}[\mathfrak{X}]}{\Gamma}{\sigma_i}{\Pi_i}}
+  \infer2[4]{\InFamily{\mathcal{A}_{ne}[\mathfrak{X}]}{\Gamma}{\mvar{\dyn{\mathfrak{m}}}{\sigma}}{\tau}}
+\end{prooftree}
+\qquad
+\begin{prooftree}
+  \hypo{\InFamily{\mathcal{A}}{\Gamma}{\Litt{t}}{\tau}}
+  \infer1[5]{\InFamily{\mathcal{A}_{ne}[\mathfrak{X}]}{\Gamma}{\mvar{\sta{\Litt{t}}}{\mathtt{var}}}{\tau}}
+\end{prooftree}
+\\
+\begin{prooftree}
+  \hypo{\InFamily{\mathcal{A}}{\Pi}{\Litt{t}}{\tau}}
+  \hypo{\InFamily{\mathcal{A}_{\beta\eta}[\mathfrak{X}]}{\Gamma}{\sigma_i}{\Pi_i}}
+  \hypo{\sigma \text{ uses a dynamic variable}}
+  \infer3[6]{\InFamily{\mathcal{A}_{ne}[\mathfrak{X}]}{\Gamma}{\mvar{\sta{\Litt{t}}}{\sigma}}{\tau}}
+\end{prooftree}
+\end{gather*}
+
+In summary, this normal form first requires terms to have no β~reductions
+(resulting in a family of neutral terms \(\mathcal{A}_{ne}[\mathfrak{X}]\)). Then terms are
+η~expanded so each type constructor has exactly one constructor.
+
+Rules 1~and~2 describe how to convert neutral terms into normal forms: each
+function requires an explicit abstraction, and terms of neutral type must be
+neutral.
+
+Rule~3 describes which applications are irreducible. The first argument to the
+application must itself be irreducible. If the only requirement was for it to be
+in normal form, then it could be an abstraction term. This is β-reducible, so
+goes against the principal of performing all possible reductions. Further at
+least one argument must use a dynamic variable. If both arguments to application
+were static, then they are both values in \(\mathcal{A}\) so the application can be
+reduced by using application from \(\mathcal{A}\). Thus, evaluation is stuck only if at
+least one of the two argument has a dynamic variable.
+
+Rule~4 states that dynamic variables are always stuck. There is no information
+to allow for further evaluation, so they are always neutral.
+
+Rules 5~and~6 describe which substitutions into static values are neutral.
+Rule~5 says that the identity substitution is stuck. Static values always appear
+with a substitution in terms. Because applying the identity substitution doesn't
+change the static value, nor does it influence any later substitutions, it is
+the maximally-reduced substitution where all components are static. The
+hypothesis of rule~6 requires at least one substitution parameter to be dynamic.
+Vecause substitutions are performed in parallel, this blocks the full
+substitution.
+
+Notice that neither normal forms or neutral terms used bound variables. Any
+variable \(\Var{i}\) is equivalent to \(\mvar{\sta{\Var{i}}}{\mathtt{var}}\).
+Expanding bound variables into static values can be seen as a reduction, so
+should be evaluated according to the principal of performing all possible
+reductions.
+
+Using a logical relations argument, it is possible to define a mapping
+\(\mathbb{T}[\mathcal{A} \cup \mathfrak{X}] \to \mathcal{A}_{\beta\eta}[\mathfrak{X}]\)\footnotemark{}.
+
+\footnotetext{How, exactly?}
 
 \section{The Equality Problem}
 
-Unfortunately, the normal form just presented is not a model of STLC.\@ In fact,
-it is not even an algebra. The problem comes from substitution, and can be
-demonstrated by the following two equal terms:
-
+Unfortunately, the normal form just presented using equality is not a model of
+STLC.\@ In fact, it is not even an algebra. The problem comes from substitution,
+and can be demonstrated by the following two equal terms:
 \begin{align*}
-\msub{\sta{\Lapp{\mathtt{x}_i}{\mathtt{t}}}}{\dyn{\zeta}}
-  &= \msub{(\Lapp{\sta{\mathtt{x}_i}}{\sta{\mathtt{t}}})}{\dyn{\zeta}} \\
-  &= \msub{(\Lapp{\mathtt{x}_i}{\sta{\mathtt{t}}})}{\dyn{\zeta}} \\
-  &= \Lapp{\msub{\mathtt{x}_i}{\dyn{\zeta}}}{\msub{\sta{\mathtt{t}}}{\dyn{\zeta}}} \\
-  &= \Lapp{\dyn{\zeta_i}}{\msub{\sta{\mathtt{t}}}{\dyn{\zeta}}}
+\mvar{\sta{\Lapp{\Var{i}}{\Litt{t}}}}{\dyn{\sigma}}
+  &= \Lsub{(\Lapp{\sta{\Var{i}}}{\sta{\Litt{t}}})}{\dyn{\sigma}} \\
+  &= \Lsub{(\Lapp{\Var{i}}{\sta{\Litt{t}}})}{\dyn{\sigma}} \\
+  &= \Lapp{\Lsub{\Var{i}}{\dyn{\sigma}}}{\Lsub{\sta{\Litt{t}}}{\dyn{\sigma}}} \\
+  &= \Lapp{\dyn{\sigma_i}}{\mvar{\sta{\Litt{t}}}{\dyn{\sigma}}}
 \end{align*}
 
 Assuming the terms have type \(N\), then they are in normal form. The top two
 lines normalise to the first term, and the bottom two lines normalise to the
-final term. However, because the subterm
-\(\sta{\Lapp{\mathtt{x}_i}{\mathtt{t}}}\) is opaque for an arbitrary algebra
-\(\mathcal{A}\), these two normal forms for the same term are necessarily distinct.
+final term. However, because the subterm \(\sta{\Lapp{\Var{i}}{\Litt{t}}}\) is
+opaque for an arbitrary algebra \(\mathcal{A}\), these two normal forms for the same term
+are distinct.
 
-For this normal form to be an algebra, it must be taken as a quotient with
-respect to some relation\footnotemark{}.
+For this normal form to be an algebra, it must be taken quotient \(\approx\), the same
+relation the term algebra is subject to.
 
-\footnotetext{I need to work out what exactly.}
+\section{Removing the Quotient: Effective Free Extensions}
 
-\section{Removing the Quotient}
+In practical systems, using a quotient for equality can be undesirable.
+Especially when the quotient is undecidable. An \emph{effective} free extension
+uses identity of values for equality---both easy to compute and decidable.
 
-This is full of loose ideas, without any proof.
+I suspect that there is no free extension for STLC that is effective for all
+algebras, due to the equality problem. Instead, I will discuss classes of
+algebras where the βη-normal form is effective.
 
-The quotient over the normal form can be eliminated in some cases. Starting
-simple, the quotient is eliminable when the algebra \(\mathcal{A}\) to be extend by \(\mathfrak{X}\)
-is given by \(\mathcal{A} = {\mathbb{T}[\mathfrak{Y}]}\) for some fixed family of metavariables \(\mathfrak{Y}\). The
-presented normal form is also the βη-normal form of \(\mathbb{T}[\mathfrak{X} \cup \mathfrak{Y}]\), which is
-an algebra without needing a quotient.
+The simplest case is when \(\mathcal{A} = \term{\emptyset}\): the initial algebra. In this case,
+\(\term{\term{\emptyset} \cup \mathfrak{X}}_{/\approx} \cong \term{\mathfrak{X}}\), and \(\term{\emptyset}_{\beta\eta}[\mathfrak{X}]\) is the
+classical βη-normal form extended with metavariables. By design, βη-normal form
+identifies terms that are equivalent, thus this is an effective free extension.
+This argument can be generalised to \(\mathcal{A} = \term{\mathfrak{Y}}\), for any fixed set of
+metavariables \(\mathfrak{Y}\), as \(\term{\term{\mathfrak{Y}} \cup \mathfrak{X}}_{/\approx} \cong \term{\mathfrak{Y} \cup \mathfrak{X}}\).
 
-Another example are algebras \(\mathcal{A}\) that are ``normal forms'', with a
-\(\mathfrak{Y}\)-syntactic-algebra homomorphism \(\mathcal{A} \to {\mathbb{T}[\mathfrak{Y}]}\) for some fixed family \(\mathfrak{Y}\).
-To evaluate terms \(\mathbb{T}[\mathcal{A} \cup \mathfrak{X}]\), first forget \(\mathcal{A}\) to obtain \(\mathbb{T}[{\mathbb{T}[\mathcal{A}]} \cup \mathfrak{X}]\).
-Next normalise this as above, and recompute \(\mathcal{A}\) using \(\mathtt{interp}\) and
-\(\mathtt{bind}\).
+Now consider an algebra \(\mathcal{A}\) such that there is an isomorphism \(\mathcal{A}\cong\term{\mathfrak{Y}}\).
+This is true for all ``normal forms'' of \term{\mathfrak{Y}}, such as weak-head normal
+form, βη-normal form, and CPS form. \(\mathcal{A}_{\beta\eta}[\mathfrak{X}]\) is an effective free
+extension, because it is isomorphic to \(\term{\mathfrak{Y}}_{\beta\eta}[\mathfrak{X}]\), which is effective.
+
+One thing missing from the previous form is terms that compute on values of the
+neutral type. For example, if an algebra \(\mathcal{A}\) treats values of type \(N\) as
+naturals, with an addition operator, then \(\mathcal{A}\not\to\term{\mathbb{N}\cup\{+\}}\), because
+\(\sta{5} = \sta{\mvar{add}{2, 3}} = \mvar{\sta{add}}{\sta{2}, \sta{3}}\), but
+the outer terms are not equal in \term{\mathbb{N}\cup\{+\}}.
+
+Everthing past here is a rough sketch.
+
+Define \(\mathcal{A}\) to be a (sub|super)-model\footnotemark{} of the STLC when there is:
+
+\footnotetext{I don't know which is better. Maybe it should be something
+  completely different?}
+
+\begin{itemize}
+\item a sorted family \(\mathfrak{Y}\)
+\item a set of axioms \(\mathbf{Ax} \in \InFamily{\term{\mathfrak{X}\cup\mathfrak{Y}}}{\emptyset}{t =_{\mathcal{A}} u}{\tau}\)
+\item an isomorphism \(\mathcal{A} \cong \term{\mathfrak{Y}}_{/\mathbf{Ax}}\)
+\end{itemize}
+
+where
+
+\begin{itemize}
+\item abstraction does not occur in  \(\mathbf{Ax}\)
+\item all equalities in \(\mathcal{A}\) are generated by β- and η- equalities and \(\mathbf{Ax}\)
+\end{itemize}
+
+\appendix
+\section{Commentary about \LaTeX}
+
+The character \(\mathfrak{Y}\) is written \verb|\mathfrak{Y}|, yet it looks much more like an ``N'' to
+me.
 
 \end{document}
 
